@@ -190,7 +190,7 @@ class LoginAndCartTests(BaseTest):
         self.click_profile()
         self.logout_user()
 
-        print(f"✅ Test '{self._testMethodName}' hoàn thành thành công.")
+        print(f"✅ Test '{self._testMethodName}' Success.")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
