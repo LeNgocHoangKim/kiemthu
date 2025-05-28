@@ -7,7 +7,7 @@ from selenium.common.exceptions import TimeoutException
 import time
 import random
 
-# --- Tạo email ngẫu nhiên để không bị trùng ---
+# --- Tạo email ngẫu nhiên ---
 VALID_EMAIL = f"lekim+test{random.randint(1000, 9999)}@gmail.com"
 VALID_PASSWORD = "1232123123"
 
@@ -20,7 +20,7 @@ class BaseTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        time.sleep(3)
+        time.sleep(4)
         cls.driver.quit()
 
     def navigate_to_home(self):
@@ -85,6 +85,8 @@ class BaseTest(unittest.TestCase):
         except TimeoutException:
             self.fail("❌ Không chuyển sang trang đăng nhập sau khi đăng ký.")
 
+        time.sleep(4)  # ⏳
+
     def login_user(self, email, password):
         self.navigate_to_login_page()
         email_input = self.wait.until(EC.presence_of_element_located((By.NAME, "email")))
@@ -99,15 +101,18 @@ class BaseTest(unittest.TestCase):
         sign_in_button.click()
 
         self.assert_user_logged_in()
+        time.sleep(4)  # ⏳
 
     def logout_user(self):
-        self.navigate_to_home()
-        profile_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Profile']")))
-        profile_button.click()
-        logout_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Logout']")))
-        logout_button.click()
-        self.wait.until(EC.url_matches(r"https://e-commerce-for-testing\.onrender\.com/?$"))
-        self.assert_user_logged_out()
+        try:
+            logout_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Logout']")))
+            logout_button.click()
+            self.wait.until(EC.url_matches(r"https://e-commerce-for-testing\.onrender\.com/?$"))
+            self.assert_user_logged_out()
+            print("✅ Đã logout thành công.")
+            time.sleep(4)  # ⏳
+        except TimeoutException:
+            self.fail("❌ Không tìm thấy nút Logout trong trang Profile.")
 
     def add_to_basket(self):
         products = self.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div")))
@@ -117,21 +122,17 @@ class BaseTest(unittest.TestCase):
         products[0].click()
         add_to_basket_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Add to Basket')]")))
         add_to_basket_button.click()
-        time.sleep(2)  # Thêm sleep sau khi click Add to Basket
         print("✅ Đã click 'Add to Basket'.")
+        time.sleep(4)  # ⏳
 
     def open_basket(self):
         try:
-            cart_button = self.wait.until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, "//button[contains(text(),'Basket')]")
-                )
-            )
+            cart_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Basket')]")))
             cart_button.click()
-            time.sleep(2)  # Thêm sleep sau khi mở giỏ hàng
             print("✅ Đã vào trang giỏ hàng.")
         except TimeoutException:
             self.fail("❌ Không tìm thấy hoặc không thể click vào nút giỏ hàng.")
+        time.sleep(4)  # ⏳
 
     def add_and_remove_product_in_cart(self):
         self.navigate_to_home()
@@ -140,7 +141,6 @@ class BaseTest(unittest.TestCase):
 
         remove_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Remove from Basket')]")))
         remove_button.click()
-        time.sleep(2)  # Thêm sleep sau khi click Remove
         print("✅ Đã click nút xóa sản phẩm.")
 
         try:
@@ -149,29 +149,19 @@ class BaseTest(unittest.TestCase):
             ))
             print("✅ Giỏ hàng đã trống.")
         except TimeoutException:
-            page_source = self.driver.page_source
             print("⚠️ Warning: Không thấy thông báo giỏ hàng trống sau khi xóa sản phẩm.")
-            print("DEBUG: Trang hiện tại sau khi remove sản phẩm:", page_source[:500])  # In 500 ký tự đầu
 
-    def open_profile_page(self):
-        try:
-            profile_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Profile']")))
-            profile_button.click()
-            time.sleep(2)
-            print("✅ Đã vào trang profile.")
-        except TimeoutException:
-            self.fail("❌ Không tìm thấy hoặc không thể click vào nút Profile.")
+        time.sleep(4)  # ⏳
 
     def click_profile(self):
-        # Scroll và click Profile, dùng execute_script để chắc chắn click được
         try:
             profile_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Profile']")))
             self.driver.execute_script("arguments[0].scrollIntoView(true);", profile_button)
             profile_button.click()
             print("✅ Đã click nút Profile.")
-            time.sleep(1)
         except TimeoutException:
             self.fail("❌ Không tìm thấy hoặc không thể click vào nút Profile.")
+        time.sleep(1)  # ⏳
 
 class LoginAndCartTests(BaseTest):
     def test_login_and_cart_flow(self):
@@ -181,7 +171,6 @@ class LoginAndCartTests(BaseTest):
         self.register_new_user(VALID_EMAIL, VALID_PASSWORD)
         self.login_user(VALID_EMAIL, VALID_PASSWORD)
 
-        # Bắt lỗi ở add_and_remove_product_in_cart để test tiếp tục
         try:
             self.add_and_remove_product_in_cart()
         except AssertionError as e:
