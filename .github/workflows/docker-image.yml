@@ -12,10 +12,19 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
         node-version: 'lts/*'
+
+    - name: Cache node modules
+      uses: actions/cache@v3
+      with:
+        path: ./frontend/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
 
     - name: Install dependencies
       run: npm install
@@ -26,11 +35,12 @@ jobs:
       working-directory: ./frontend
 
   build:
-    needs: test  # Chạy job 'test' trước
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
 
@@ -54,11 +64,13 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
-    - name: Create Pull Request
+    - name: Create Pull Request to sync main → master
       uses: peter-evans/create-pull-request@v3
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        branch: feature/merge-to-master
-        title: Merge to master
+        base: master   # nhánh đích
+        branch: main   # nhánh nguồn
+        title: 'Auto PR: Sync main to master'
+        body: 'This pull request syncs the latest changes from main to master.'
